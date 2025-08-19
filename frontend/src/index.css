@@ -1,65 +1,72 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/* -------------------------
+  ESTILOS GERAIS
+-------------------------- */
 body {
-  @apply bg-gray-100 text-gray-900 font-sans min-h-screen;
+  @apply bg-gray-100 text-gray-900 font-sans antialiased;
+  margin: 0;
+  padding: 0;
 }
 
-h1 {
-  @apply text-3xl font-extrabold text-gray-800 mb-6;
+/* -------------------------
+  TIPOGRAFIA
+-------------------------- */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold text-gray-800;
 }
 
+h1 { @apply text-2xl md:text-3xl; }
+h2 { @apply text-xl md:text-2xl; }
+h3 { @apply text-lg md:text-xl; }
+
+p {
+  @apply text-base leading-relaxed text-gray-700;
+}
+
+/* -------------------------
+  NAVEGAÇÃO
+-------------------------- */
+nav a {
+  @apply block md:inline-block text-white text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200;
+}
+
+nav a:hover {
+  @apply bg-blue-800;
+}
+
+/* -------------------------
+  BOTÕES
+-------------------------- */
+button, .btn {
+  @apply bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition duration-200;
+}
+
+button:hover, .btn:hover {
+  @apply bg-blue-800;
+}
+
+/* -------------------------
+  CARDS (para páginas internas)
+-------------------------- */
+.card {
+  @apply bg-white rounded-2xl shadow-md p-6 mb-4;
+}
+
+/* -------------------------
+  FORMULÁRIOS
+-------------------------- */
 input, select, textarea {
-  @apply border border-gray-300 rounded-md p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400;
+  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 }
 
-button {
-  @apply bg-blue-600 text-white font-semibold py-2 px-5 rounded-md shadow-md transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400;
+label {
+  @apply block text-gray-700 font-medium mb-2;
 }
 
-button:disabled {
-  @apply bg-gray-400 cursor-not-allowed;
-}
-
-table {
-  @apply w-full border-collapse shadow-md rounded-md overflow-hidden;
-}
-
-thead tr {
-  @apply bg-blue-600 text-white;
-}
-
-tbody tr:nth-child(even) {
-  @apply bg-gray-50;
-}
-
-tbody tr:hover {
-  @apply bg-blue-100;
-}
-
-th, td {
-  @apply p-3 border border-gray-300 text-left;
-}
-
-form {
-  @apply bg-white p-6 rounded-lg shadow-lg mb-8 max-w-xl mx-auto;
-}
-
-input, button {
-  @apply mb-4 w-full;
-}
-
-@media (min-width: 640px) {
-  form {
-    @apply flex flex-wrap gap-4 items-end;
-  }
-
-  input, button {
-    @apply mb-0 w-auto flex-grow;
-  }
-
-  button {
-    @apply flex-shrink-0;
-  }
+/* -------------------------
+  RESPONSIVIDADE EXTRA
+-------------------------- */
+.container {
+  @apply max-w-5xl mx-auto px-4;
 }

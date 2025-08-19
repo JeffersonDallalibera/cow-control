@@ -6,7 +6,7 @@ const supabase = require('../config/supabase');
 router.post('/', async (req, res) => {
   const { animal_id, data_teste, anterior_esquerdo, anterior_direito, posterior_esquerdo, posterior_direito, observacoes } = req.body;
   const { data, error } = await supabase
-    .from('Raquete')
+    .from('raquete')
     .insert([{ animal_id, data_teste, anterior_esquerdo, anterior_direito, posterior_esquerdo, posterior_direito, observacoes }])
     .select();
 
@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
 
 // Listar Raquetes
 router.get('/', async (req, res) => {
-  const { data, error } = await supabase.from('Raquete').select('*');
+  const { data, error } = await supabase.from('raquete').select('*');
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });

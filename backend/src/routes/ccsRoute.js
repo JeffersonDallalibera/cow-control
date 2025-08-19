@@ -6,7 +6,7 @@ const supabase = require('../config/supabase');
 router.post('/ccsIndividual/create', async (req, res) => {
   const { animal_id, data_coleta, resultado, metodo, laboratorio } = req.body;
   const { data, error } = await supabase
-    .from('CCSIndividual')
+    .from('ccsindividual')
     .insert([{ animal_id, data_coleta, resultado, metodo, laboratorio }])
     .select();
 
@@ -16,7 +16,7 @@ router.post('/ccsIndividual/create', async (req, res) => {
 
 // Listar CCS
 router.get('/ccsIndividual', async (req, res) => {
-  const { data, error } = await supabase.from('CCSIndividual').select('*');
+  const { data, error } = await supabase.from('ccsindividual').select('*');
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });

@@ -6,7 +6,7 @@ const supabase = require('../config/supabase');
 router.post('/', async (req, res) => {
   const { data_coleta, volume_litros, resultado, laboratorio, observacoes } = req.body;
   const { data, error } = await supabase
-    .from('CCSTanque')
+    .from('ccstanque')
     .insert([{ data_coleta, volume_litros, resultado, laboratorio, observacoes }])
     .select();
 
@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
 
 // Listar CCS Tanque
 router.get('/', async (req, res) => {
-  const { data, error } = await supabase.from('CCSTanque').select('*');
+  const { data, error } = await supabase.from('ccstanque').select('*');
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });

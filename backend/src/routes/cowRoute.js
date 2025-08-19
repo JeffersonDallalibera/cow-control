@@ -6,7 +6,7 @@ const supabase = require('../config/supabase');
 router.post('/CreateCow', async (req, res) => {
   const { brinco, nome, lote, data_nascimento, raca } = req.body;
   const { data, error } = await supabase
-    .from('Animal')
+    .from('animal')
     .insert([{ brinco, nome, lote, data_nascimento, raca }])
     .select();
 
@@ -16,7 +16,7 @@ router.post('/CreateCow', async (req, res) => {
 
 // Listar Animais
 router.get('/ListAllCows', async (req, res) => {
-  const { data, error } = await supabase.from('Animal').select('*');
+  const { data, error } = await supabase.from('animal').select('*');
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
@@ -26,7 +26,7 @@ router.put('/UpdateCow/:id', async (req, res) => {
   const { id } = req.params;
   const { brinco, nome, lote, data_nascimento, raca } = req.body;
   const { data, error } = await supabase
-    .from('Animal')
+    .from('animal')
     .update({ brinco, nome, lote, data_nascimento, raca })
     .eq('id', id)
     .select();

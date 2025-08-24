@@ -1,0 +1,43 @@
+/* Definição de Cores */
+:root {
+    --primary-color: #005A9C; /* Um azul mais sóbrio */
+    --primary-hover: #004578;
+}
+
+/* Customização do Bootstrap */
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.table-primary {
+    background-color: var(--primary-color) !important;
+    color: white;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #e7f1fa; /* Azul claro para o acordeão aberto */
+    color: var(--primary-color);
+}
+
+.card-header {
+    font-weight: bold;
+}
+
+body {
+    background-color: #f8f9fa; /* Fundo levemente cinza */
+}

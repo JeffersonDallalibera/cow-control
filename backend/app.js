@@ -5,11 +5,11 @@ const cors = require('cors');
 require('dotenv').config();
 
 // Importando as rotas com nomes atualizados
-const animaisRoutes = require('./routes/animais.routes');
-const ccsRoutes = require('./routes/ccs.routes');
-const raqueteRoutes = require('./routes/raquete.routes');
-const ccsTanqueRoutes = require('./routes/ccsTanque.routes');
-const dashboardRoutes = require('./routes/dashboard.routes');
+const animaisRoutes = require('./src/routes/animais.routes');
+const ccsRoutes = require('./src/routes/ccs.routes');
+const raqueteRoutes = require('./src/routes/raquete.routes');
+const ccsTanqueRoutes = require('./src/routes/ccsTanque.routes');
+const dashboardRoutes = require('./src/routes/dashboard.routes');
 
 const app = express();
 app.use(cors());

@@ -48,13 +48,18 @@ router.get('/:id', async (req, res) => {
     const { data: raqueteData, error: raqueteError } = await supabase.from('raquete').select('*').eq('animal_id', id);
     if (raqueteError) return res.status(400).json({ error: raqueteError.message });
 
+  // Buscando o histórico de vacinas para este animal
+    console.log("Buscando histórico de vacinas para o animal:", id);
+    const { data: vacinasData, error: vacinasError } = await supabase.from('vacinas').select('*').eq('animal_id', id);
+  if (vacinasError) return res.status(400).json({ error: vacinasError.message });
+  console.log("Histórico de vacinas encontrado:", vacinasData);
+
     // Adiciona os históricos ao objeto do animal antes de enviar
     const animalComHistorico = {
         ...data,
         historicoCCS: ccsData || [],
         historicoRaquete: raqueteData || [],
-        // Adicionar histórico de vacinas aqui quando tiver a tabela
-        historicoVacinas: [] 
+        historicoVacinas: vacinasData || []
     };
 
     res.json(animalComHistorico);

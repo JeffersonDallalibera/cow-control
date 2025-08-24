@@ -41,3 +41,13 @@
 body {
     background-color: #f8f9fa; /* Fundo levemente cinza */
 }
+/* css/style.css */
+.card-link {
+    text-decoration: none;
+    color: inherit;
+}
+.card-hover:hover {
+    transform: scale(1.03);
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}

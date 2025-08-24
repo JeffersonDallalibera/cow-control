@@ -10,6 +10,7 @@ const ccsRoutes = require('./src/routes/ccs.routes');
 const raqueteRoutes = require('./src/routes/raquete.routes');
 const ccsTanqueRoutes = require('./src/routes/ccsTanque.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
+const vacinasRoutes = require('./src/routes/vacinas.routes'); 
 
 const app = express();
 app.use(cors());
@@ -22,6 +23,7 @@ app.use('/api/ccs', ccsRoutes);
 app.use('/api/raquete', raqueteRoutes);
 app.use('/api/ccs-tanque', ccsTanqueRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/vacinas', vacinasRoutes);
 
 // Rota de "health check" para saber se a API está no ar
 app.get('/api', (req, res) => {

@@ -1,57 +1,52 @@
 // js/main.js
-
 document.addEventListener('DOMContentLoaded', () => {
+    // Roteador simples baseado no nome do arquivo na URL
     const path = window.location.pathname.split("/").pop();
 
+    if (path === 'index.html' || path === '') {
+        carregarDashboard();
+    }
     if (path === 'rebanho.html') {
         iniciarPaginaRebanho();
     }
-    
-    
-    if (path === 'index.html' || path === '') {
-        carregarDashboard(); // Nova função para a página inicial
-    }
-
     if (path === 'animal.html') {
         iniciarPaginaAnimal();
+    }
+    if (path === 'vacinas.html') {
+        iniciarPaginaVacinas();
+    }
+    if (path === 'alertas-ccs.html') {
+        iniciarPaginaAlertasCCS();
     }
     
     configurarModalNovoAnimal();
 });
 // =================================================================
-// INICIALIZADORES DE PÁGINA
+// INICIALIZADORES DE PÁGINA (Funções que buscam dados da API)
 // =================================================================
 
 async function carregarDashboard() {
     try {
         const response = await fetch(`${API_URL}/dashboard`);
         if (!response.ok) throw new Error('Não foi possível carregar os dados do painel.');
-
         const data = await response.json();
-
-        // Atualiza os cards com os dados recebidos
         document.getElementById('total-animais').textContent = data.totalAnimais;
         document.getElementById('vacinas-pendentes').textContent = data.vacinasPendentes;
         document.getElementById('alertas-ccs').textContent = data.alertasCCS;
-
     } catch (error) {
         console.error("Erro no dashboard:", error);
-        // Exibe uma mensagem de erro nos cards
-        document.getElementById('total-animais').textContent = 'X';
-        document.getElementById('vacinas-pendentes').textContent = 'X';
-        document.getElementById('alertas-ccs').textContent = 'X';
+        document.getElementById('total-animais').textContent = 'Erro';
+        document.getElementById('vacinas-pendentes').textContent = 'Erro';
+        document.getElementById('alertas-ccs').textContent = 'Erro';
     }
 }
-
 
 async function iniciarPaginaRebanho() {
     try {
         const response = await fetch(`${API_URL}/animais`);
         if (!response.ok) throw new Error('Falha ao buscar dados do rebanho.');
-        
         const animais = await response.json();
         carregarTabelaRebanho(animais);
-
         document.getElementById('busca-animal')?.addEventListener('input', (e) => {
             const termo = e.target.value.toLowerCase();
             const animaisFiltrados = animais.filter(animal => 
@@ -69,18 +64,125 @@ async function iniciarPaginaRebanho() {
 async function iniciarPaginaAnimal() {
     try {
         const params = new URLSearchParams(window.location.search);
+        
+        // --- CORREÇÃO AQUI ---
+        // Removemos o parseInt. O ID agora é tratado como texto (UUID).
         const animalId = params.get('id');
+        
         if (!animalId) throw new Error('ID do animal não fornecido na URL.');
 
         const response = await fetch(`${API_URL}/animais/${animalId}`);
         if (!response.ok) throw new Error('Animal não encontrado.');
-
         const animal = await response.json();
+
+        console.log("Dados do animal recebidos pela API:", animal);
+
         carregarDetalhesAnimal(animal);
-        configurarModaisDeRegistro(animal.id);
+        configurarModaisDeRegistro(animal.id); // Passa o ID (UUID) como texto
     } catch (error) {
         console.error("Erro:", error);
         document.getElementById('nome-animal').textContent = error.message;
+    }
+}
+
+async function iniciarPaginaVacinas() {
+    try {
+        const responseVacinas = await fetch(`${API_URL}/vacinas`);
+        if (!responseVacinas.ok) throw new Error('Falha ao buscar dados de vacinas.');
+        const registros = await responseVacinas.json();
+        
+        const corpoTabela = document.getElementById('tabela-vacinas');
+        corpoTabela.innerHTML = '';
+        if (registros.length === 0) {
+            corpoTabela.innerHTML = '<tr><td colspan="5">Nenhum registro de vacina encontrado.</td></tr>';
+        } else {
+            registros.sort((a, b) => new Date(b.data_aplicacao) - new Date(a.data_aplicacao));
+            registros.forEach(reg => {
+                const dataAplicacaoOriginal = new Date(reg.data_aplicacao);
+                let proximaDose = new Date(dataAplicacaoOriginal);
+                proximaDose.setDate(proximaDose.getDate() + reg.dias_revacina);
+                const linha = `
+                    <tr>
+                        <td><a href="animal.html?id=${reg.animal.id}">${reg.animal.brinco}</a></td>
+                        <td>${reg.animal.nome || '-'}</td>
+                        <td>${reg.nome_vacina}</td>
+                        <td>${new Date(reg.data_aplicacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                        <td>${proximaDose.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                    </tr>
+                `;
+                corpoTabela.innerHTML += linha;
+            });
+        }
+
+        const responseAnimais = await fetch(`${API_URL}/animais`);
+        if (!responseAnimais.ok) throw new Error('Falha ao buscar lista de animais.');
+        const animais = await responseAnimais.json();
+        const selectAnimal = document.getElementById('vacina-animal-id-select');
+        selectAnimal.innerHTML = '<option value="" selected disabled>Selecione um animal...</option>';
+        animais.forEach(animal => {
+            const option = `<option value="${animal.id}">${animal.brinco} - ${animal.nome || 'Sem nome'}</option>`;
+            selectAnimal.innerHTML += option;
+        });
+
+        const formVacinaGeral = document.getElementById('form-nova-vacina-geral');
+        if (!formVacinaGeral.dataset.listenerAdicionado) {
+            formVacinaGeral.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const animalIdSelecionado = document.getElementById('vacina-animal-id-select').value;
+                if (!animalIdSelecionado) {
+                    alert("Erro: É obrigatório selecionar um animal da lista.");
+                    return;
+                }
+                const data = {
+                    // --- CORREÇÃO AQUI ---
+                    // Removemos o parseInt. O ID do animal (UUID) é um texto.
+                    animal_id: animalIdSelecionado,
+                    data_aplicacao: document.getElementById('vacina-data_aplicacao').value,
+                    nome_vacina: document.getElementById('vacina-nome_vacina').value,
+                    dose: document.getElementById('vacina-dose').value,
+                    dias_revacina: parseInt(document.getElementById('vacina-dias_revacina').value),
+                };
+                await salvarRegistro('/vacinas', data, '#modalRegistrarVacinaGeral', formVacinaGeral, iniciarPaginaVacinas);
+            });
+            formVacinaGeral.dataset.listenerAdicionado = 'true';
+        }
+    } catch (error) {
+        console.error("Erro na página de vacinas:", error);
+        document.getElementById('tabela-vacinas').innerHTML = `<tr><td colspan="5" class="text-danger">${error.message}</td></tr>`;
+    }
+}
+
+async function iniciarPaginaAlertasCCS() {
+    try {
+        const response = await fetch(`${API_URL}/ccs`);
+        if (!response.ok) throw new Error('Falha ao buscar dados de CCS.');
+        let registros = await response.json();
+        registros = registros.filter(reg => reg.resultado > 400000);
+        const corpoTabela = document.getElementById('tabela-alertas-ccs');
+        corpoTabela.innerHTML = '';
+        if (registros.length === 0) {
+            corpoTabela.innerHTML = '<tr><td colspan="4">Nenhum alerta de CCS encontrado.</td></tr>';
+            return;
+        }
+        const animaisResponse = await fetch(`${API_URL}/animais`);
+        const animais = await animaisResponse.json();
+        const mapaAnimais = new Map(animais.map(animal => [animal.id, animal]));
+        registros.sort((a, b) => new Date(b.data_coleta) - new Date(a.data_coleta));
+        registros.forEach(reg => {
+            const animal = mapaAnimais.get(reg.animal_id);
+            const linha = `
+                <tr>
+                    <td><a href="animal.html?id=${reg.animal_id}">${animal?.brinco || 'N/A'}</a></td>
+                    <td>${animal?.nome || '-'}</td>
+                    <td>${new Date(reg.data_coleta).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                    <td><strong>${reg.resultado.toLocaleString('pt-BR')}</strong></td>
+                </tr>
+            `;
+            corpoTabela.innerHTML += linha;
+        });
+    } catch (error) {
+        console.error("Erro:", error);
+        document.getElementById('tabela-alertas-ccs').innerHTML = `<tr><td colspan="4" class="text-danger">${error.message}</td></tr>`;
     }
 }
 
@@ -129,8 +231,7 @@ function carregarDetalhesAnimal(animal) {
 }
 
 function atualizarTabelasHistorico(animal) {
-    // Altere as colunas aqui para corresponder aos dados do backend
-    preencherTabelaSimples('tabela-vacinas', animal.historicoVacinas, ['data', 'nome', 'dose']);
+    preencherTabelaSimples('tabela-vacinas', animal.historicoVacinas, ['data_aplicacao', 'nome_vacina', 'dose']);
     preencherTabelaSimples('tabela-ccs', animal.historicoCCS, ['data_coleta', 'resultado', 'metodo']);
     preencherTabelaRaquete(animal.historicoRaquete);
 }
@@ -142,7 +243,7 @@ function preencherTabelaSimples(idTabela, dados, colunas) {
         tabela.innerHTML = `<tr><td colspan="${colunas.length}">Nenhum registro encontrado.</td></tr>`;
         return;
     }
-    dados.sort((a, b) => new Date(b.data || b.data_coleta) - new Date(a.data || a.data_coleta));
+    dados.sort((a, b) => new Date(b[colunas[0]]) - new Date(a[colunas[0]]));
     dados.forEach(registro => {
         let linha = '<tr>';
         colunas.forEach(coluna => {
@@ -180,7 +281,6 @@ function preencherTabelaRaquete(dados) {
     });
 }
 
-
 // =================================================================
 // LÓGICA DOS FORMULÁRIOS (MODAIS)
 // =================================================================
@@ -194,7 +294,6 @@ function configurarModalNovoAnimal() {
                 brinco: document.getElementById('brinco').value,
                 nome: document.getElementById('nome').value,
                 data_nascimento: document.getElementById('dataNascimento').value,
-                // Adicione outros campos se existirem no form, ex: lote, raca
             };
             try {
                 const response = await fetch(`${API_URL}/animais`, {
@@ -216,42 +315,38 @@ function configurarModalNovoAnimal() {
     }
 }
 
-function configurarModaisDeRegistro(animal_id) {
-    // ---- Configura o modal de Vacinas ----
+function configurarModaisDeRegistro(animal_id) { // animal_id aqui já é o UUID em formato texto
     const formVacina = document.getElementById('form-nova-vacina');
     formVacina?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
-            animal_id, // Adiciona o ID do animal
-            data: document.getElementById('vacina-data').value,
-            nome: document.getElementById('vacina-nome').value,
+            animal_id, // Usa o ID (UUID) diretamente
+            data_aplicacao: document.getElementById('vacina-data_aplicacao').value,
+            nome_vacina: document.getElementById('vacina-nome_vacina').value,
             dose: document.getElementById('vacina-dose').value,
+            dias_revacina: parseInt(document.getElementById('vacina-dias_revacina').value),
         };
-        // CRIE A ROTA 'POST /api/vacinas' NO SEU BACKEND
-        alert("Funcionalidade de Vacinas ainda não implementada no backend!");
-        // await salvarRegistro('/vacinas', data, '#modalRegistrarVacina', formVacina);
+        await salvarRegistro('/vacinas', data, '#modalRegistrarVacina', formVacina, iniciarPaginaAnimal);
     });
 
-    // ---- Configura o modal de CCS ----
     const formCCS = document.getElementById('form-novo-ccs');
     formCCS?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
-            animal_id, // Adiciona o ID do animal
+            animal_id, // Usa o ID (UUID) diretamente
             data_coleta: document.getElementById('ccs-data_coleta').value,
             resultado: parseInt(document.getElementById('ccs-resultado').value),
             metodo: document.getElementById('ccs-metodo').value,
             laboratorio: document.getElementById('ccs-laboratorio').value,
         };
-        await salvarRegistro('/ccs', data, '#modalRegistrarCCS', formCCS);
+        await salvarRegistro('/ccs', data, '#modalRegistrarCCS', formCCS, iniciarPaginaAnimal);
     });
 
-    // ---- Configura o modal de Raquete ----
     const formRaquete = document.getElementById('form-nova-raquete');
     formRaquete?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
-            animal_id, // Adiciona o ID do animal
+            animal_id, // Usa o ID (UUID) diretamente
             data_teste: document.getElementById('raquete-data_teste').value,
             anterior_direito: document.getElementById('raquete-anterior_direito').value,
             anterior_esquerdo: document.getElementById('raquete-anterior_esquerdo').value,
@@ -259,12 +354,11 @@ function configurarModaisDeRegistro(animal_id) {
             posterior_esquerdo: document.getElementById('raquete-posterior_esquerdo').value,
             observacoes: document.getElementById('raquete-observacoes').value,
         };
-        await salvarRegistro('/raquete', data, '#modalRegistrarRaquete', formRaquete);
+        await salvarRegistro('/raquete', data, '#modalRegistrarRaquete', formRaquete, iniciarPaginaAnimal);
     });
 }
 
-// Função genérica para salvar um novo registro de histórico
-async function salvarRegistro(endpoint, data, modalId, form) {
+async function salvarRegistro(endpoint, data, modalId, form, callbackDeAtualizacao) {
     try {
         const response = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
@@ -281,9 +375,102 @@ async function salvarRegistro(endpoint, data, modalId, form) {
         const modalInstance = bootstrap.Modal.getInstance(modalElement);
         modalInstance.hide();
         form.reset();
-        iniciarPaginaAnimal(); // Recarrega todos os dados da página
+        
+        // Chama a função para atualizar os dados na página
+        if (callbackDeAtualizacao) {
+            callbackDeAtualizacao();
+        }
+
     } catch (error) {
         console.error(`Erro ao registrar:`, error);
         alert(error.message);
+    }
+}
+// js/main.js -> substitua esta função inteira
+
+async function iniciarPaginaVacinas() {
+    try {
+        // 1. Buscar vacinas para a tabela (lógica existente)
+        const responseVacinas = await fetch(`${API_URL}/vacinas`);
+        if (!responseVacinas.ok) throw new Error('Falha ao buscar dados de vacinas.');
+        const registros = await responseVacinas.json();
+        
+        // ... (o código que preenche a tabela continua exatamente o mesmo)
+        const corpoTabela = document.getElementById('tabela-vacinas');
+        corpoTabela.innerHTML = '';
+        if (registros.length === 0) {
+            corpoTabela.innerHTML = '<tr><td colspan="5">Nenhum registro de vacina encontrado.</td></tr>';
+        } else {
+            registros.sort((a, b) => new Date(b.data_aplicacao) - new Date(a.data_aplicacao));
+            registros.forEach(reg => {
+                const dataAplicacaoOriginal = new Date(reg.data_aplicacao);
+                let proximaDose = new Date(dataAplicacaoOriginal);
+                proximaDose.setDate(proximaDose.getDate() + reg.dias_revacina);
+
+                const linha = `
+                    <tr>
+                        <td><a href="animal.html?id=${reg.animal.id}">${reg.animal.brinco}</a></td>
+                        <td>${reg.animal.nome || '-'}</td>
+                        <td>${reg.nome_vacina}</td>
+                        <td>${new Date(reg.data_aplicacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                        <td>${proximaDose.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                    </tr>
+                `;
+                corpoTabela.innerHTML += linha;
+            });
+        }
+        // Fim da lógica de preencher a tabela
+
+        // 2. Buscar animais para o dropdown (lógica existente)
+        const responseAnimais = await fetch(`${API_URL}/animais`);
+        if (!responseAnimais.ok) throw new Error('Falha ao buscar lista de animais.');
+        const animais = await responseAnimais.json();
+
+        const selectAnimal = document.getElementById('vacina-animal-id-select');
+        selectAnimal.innerHTML = '<option value="" selected disabled>Selecione um animal...</option>';
+        animais.forEach(animal => {
+            const option = `<option value="${animal.id}">${animal.brinco} - ${animal.nome || 'Sem nome'}</option>`;
+            selectAnimal.innerHTML += option;
+        });
+
+        // 3. Configurar o formulário com validação e depuração (LÓGICA ATUALIZADA)
+        const formVacinaGeral = document.getElementById('form-nova-vacina-geral');
+        
+        // Verificamos se o listener já não foi adicionado para evitar duplicação
+        if (!formVacinaGeral.dataset.listenerAdicionado) {
+            formVacinaGeral.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const selectElement = document.getElementById('vacina-animal-id-select');
+                const animalIdSelecionado = selectElement.value;
+
+                // --- PONTO DE VERIFICAÇÃO E DEPURAÇÃO ---
+                console.log("Tentando enviar. Valor pego do select:", animalIdSelecionado); 
+                
+                // Validação mais robusta no frontend
+                if (!animalIdSelecionado || animalIdSelecionado === "") {
+                    alert("Erro: É obrigatório selecionar um animal da lista.");
+                    return; // Interrompe a execução aqui mesmo
+                }
+
+                const data = {
+                    animal_id: parseInt(animalIdSelecionado),
+                    data_aplicacao: document.getElementById('vacina-data_aplicacao').value,
+                    nome_vacina: document.getElementById('vacina-nome_vacina').value,
+                    dose: document.getElementById('vacina-dose').value,
+                    dias_revacina: parseInt(document.getElementById('vacina-dias_revacina').value),
+                };
+
+                // Mostra no console exatamente o que será enviado
+                console.log("Objeto de dados que será enviado para a API:", data);
+
+                await salvarRegistro('/vacinas', data, '#modalRegistrarVacinaGeral', formVacinaGeral, iniciarPaginaVacinas);
+            });
+            formVacinaGeral.dataset.listenerAdicionado = 'true'; // Marca que o listener foi adicionado
+        }
+
+    } catch (error) {
+        console.error("Erro na página de vacinas:", error);
+        document.getElementById('tabela-vacinas').innerHTML = `<tr><td colspan="5" class="text-danger">${error.message}</td></tr>`;
     }
 }
